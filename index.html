@@ -1,0 +1,95 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <title>Emotion Detection Web App</title>
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+  <div class="container">
+    <h1>Emotion Detection</h1>
+
+    <section class="upload-section">
+      <h2>Upload an Image</h2>
+      <form id="uploadForm" enctype="multipart/form-data">
+        <input type="text" name="username" id="usernameUpload" placeholder="Your name (optional)">
+        <input type="file" name="file" id="fileInput" accept="image/*">
+        <button type="submit">Upload & Predict</button>
+      </form>
+      <div id="uploadResult"></div>
+    </section>
+
+    <section class="camera-section">
+      <h2>Capture from Webcam</h2>
+      <input type="text" id="usernameCam" placeholder="Your name (optional)">
+      <video id="video" width="320" height="240" autoplay></video>
+      <canvas id="canvas" width="320" height="240" style="display:none"></canvas>
+      <div class="cam-controls">
+        <button id="captureBtn">Capture & Predict</button>
+      </div>
+      <div id="camResult"></div>
+    </section>
+
+    <section>
+      <h2>Recent Usage</h2>
+      <button id="refreshHistory">Refresh</button>
+      <ul id="historyList"></ul>
+    </section>
+  </div>
+
+<script>
+const uploadForm = document.getElementById("uploadForm");
+uploadForm.addEventListener("submit", async (e) => {
+  e.preventDefault();
+  const form = new FormData(uploadForm);
+  const resEl = document.getElementById("uploadResult");
+  resEl.textContent = "Uploading...";
+  const resp = await fetch("/upload", { method: "POST", body: form });
+  const data = await resp.json();
+  resEl.textContent = JSON.stringify(data, null, 2);
+});
+
+const video = document.getElementById("video");
+const canvas = document.getElementById("canvas");
+const captureBtn = document.getElementById("captureBtn");
+const camResult = document.getElementById("camResult");
+
+// start webcam
+navigator.mediaDevices.getUserMedia({ video: true, audio: false })
+  .then(stream => { video.srcObject = stream; })
+  .catch(err => { console.error("Could not get webcam:", err); });
+
+captureBtn.addEventListener("click", async () => {
+  const ctx = canvas.getContext("2d");
+  ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+  const dataURL = canvas.toDataURL("image/png");
+  camResult.textContent = "Sending...";
+  const username = document.getElementById("usernameCam").value || "anonymous";
+  const resp = await fetch("/capture", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ image: dataURL, username })
+  });
+  const data = await resp.json();
+  camResult.textContent = JSON.stringify(data, null, 2);
+});
+
+// history
+async function loadHistory(){
+  const ul = document.getElementById("historyList");
+  ul.innerHTML = "Loading...";
+  const r = await fetch("/history");
+  const arr = await r.json();
+  ul.innerHTML = "";
+  arr.forEach(it => {
+    const li = document.createElement("li");
+    li.innerHTML = `<strong>${it.username}</strong> — ${it.filename} — ${it.created_at} — ${it.result}`;
+    ul.appendChild(li);
+  });
+}
+document.getElementById("refreshHistory").addEventListener("click", loadHistory);
+loadHistory();
+</script>
+</body>
+</html>
