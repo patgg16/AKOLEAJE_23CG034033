@@ -8,4 +8,5 @@ SQLAlchemy==2.0.44
 werkzeug==2.3.7
 gunicorn==21.2.0
 pillow
-numpy
+numpy==1.26.4
+
