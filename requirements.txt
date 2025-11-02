@@ -1,5 +1,5 @@
 flask==2.3.2
-torch==2.2.0
+torch>=2.2.0,<2.8.0
 torchvision==0.17.0
 opencv-python==4.10.0.84
 numpy==1.26.0
